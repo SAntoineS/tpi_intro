@@ -13,12 +13,12 @@
           <span class="text-4xl font-extrabold">Promo / student code</span>
           <input class="p-2 rounded w-52 my-5 text-black focus:outline-none">
           <span class="text-4xl font-extrabold">Email address</span>
-          <input type="email" class="p-2 rounded w-52 my-5 text-black focus:outline-none">
+          <input @input="validate" v-model="email" type="email" class="p-2 rounded w-52 my-5 text-black focus:outline-none">
           <span class="text-4xl font-extrabold">Delivery address</span>
           Adress:
-          <input class="p-2 rounded w-52 my-5 text-black focus:outline-none">
+          <input v-model="address" class="p-2 rounded w-52 my-5 text-black focus:outline-none">
           Zip:
-          <input oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
+          <input maxlength="10" v-model="zip" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
                  class="p-2 rounded w-52 my-5 text-black focus:outline-none">
         </div>
         <div class="w-1/2 flex flex-col items-center">
@@ -46,10 +46,16 @@
           </div>
 
           <span class="text-5xl my-2">Total: <span class="font-extrabold">{{ subtotal }} $</span></span>
-          <div
+          <div v-if="email !== '' && address !== '' && zip !== ''"
               class="select-none rounded-xl cursor-pointer flex justify-center items-center w-28 h-16 bg-gray-button hover:bg-white hover:text-black"
               @click="showModal=true">
             Pay now
+          </div>
+          <div class="mt-5 text-red-500" v-if="email === '' || address === '' || zip === ''">
+            Complete delivery information
+          </div>
+          <div class="mt-5 text-red-500" v-if="email !== '' && !emailValidate">
+            Email not valid
           </div>
           <Modal v-model="showModal" title="Payment Information">
             <div class="flex flex-col">
@@ -73,7 +79,7 @@
                 </div>
                 <div class="flex justify-between space-x-4">
                   <input v-model="expDate" type="month" class="p-2 rounded  my-5 text-black border-2 border-black">
-                  <input oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" v-model="cvc" class="p-2 rounded  my-5 text-black border-2 border-black">
+                  <input maxlength="3" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" v-model="cvc" class="p-2 rounded  my-5 text-black border-2 border-black">
                 </div>
                 <div class="flex justify-center items-center">
                   <input type="submit" value="Confirm"
@@ -117,7 +123,12 @@ export default {
       errors: [],
       creditCardNumber: null,
       expDate: null,
-      cvc: null
+      cvc: null,
+
+      email: '',
+      emailValidate: false,
+      address: '',
+      zip: ''
     }
   },
   mounted() {
@@ -128,6 +139,14 @@ export default {
     })
   },
   methods: {
+    validateEmail(email) {
+      const re = /^(([^<>()[\]\\.,;:\s@]+(\.[^<>()[\]\\.,;:\s@]+)*)|(.+))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return re.test(email);
+    },
+    validate() {
+      this.emailValidate = this.validateEmail(this.email);
+      return false;
+    },
     deleteCart() {
       sessionStorage.removeItem('currentCart');
       location.reload();
