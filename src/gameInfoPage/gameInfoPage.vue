@@ -3,9 +3,10 @@
     <img alt="" :src="game.background_image" class="w-full h-full absolute opacity-10">
     <div class="flex w-1/2">
       <div class="w-1/2 flex flex-col items-center z-20">
-        <div class="flex flex-col">
-          <span class="text-5xl font-extrabold">{{ game.name }}</span>
-          <a :href="game.website" class="text-gray-500 hover:text-white">by {{ game.publishers[0].name }}</a>
+        <div class="flex flex-col w-96 flex-wrap">
+          <a :href="game.website" target="_blank" class="hover:text-white text-sm text-gray-500">view site</a><span
+            class="text-5xl font-extrabold">{{ game.name }} </span>
+          <span v-for="publisher in game.publishers" :key="publisher" class="text-gray-500"> {{ publisher.name }} </span>
           <span class="text-xs text-gray-500">{{ game.released }}</span>
         </div>
         <div class="my-10 flex space-x-4">
@@ -27,12 +28,10 @@
       </div>
       <div class="w-1/2 flex flex-col items-center z-20">
         <div class="flex flex-wrap justify-center">
-          <card-image v-for="(screen, index) in screenshots" :key="screen" :screen="screen" :screenshots="screenshots"
-                      :index="index"></card-image>
+          <card-image v-for="(screen, index) in screenshots" :key="screen" :screen="screen" :screenshots="screenshots" :index="index"></card-image>
         </div>
         <span class="text-3xl font-extrabold">50 $</span>
-        <div
-            class="rounded-xl cursor-pointer flex justify-center items-center w-28 h-16 bg-gray-button hover:bg-white hover:text-black"
+        <div class="select-none rounded-xl cursor-pointer flex justify-center items-center w-28 h-16 bg-gray-button hover:bg-white hover:text-black"
             @click="addToCart">
           Add to cart
         </div>
@@ -56,6 +55,7 @@ export default {
       url_base: 'https://api.rawg.io/api',
       game: {},
       screenshots: [],
+      alreadyIn: false
     }
   },
   mounted() {
@@ -63,9 +63,45 @@ export default {
   },
   methods: {
     addToCart() {
-      let order = {name:this.game.slug, price:50};
-      this.currentCart.push(order);
-      sessionStorage.currentCart = JSON.stringify(this.currentCart);
+      if (!this.$auth.isAuthenticated){
+        this.$notify({
+          type: 'warn',
+          title: 'Warning',
+          text: 'Sign in to add items in basket !'
+        });
+      }else {
+        let currentCart = []
+        let order = {slug: this.game.slug, price: 50, count: 1, img: this.game.background_image, name: this.game.name};
+
+        if (sessionStorage.currentCart) {
+          currentCart = JSON.parse(sessionStorage.currentCart);
+
+          currentCart.forEach(element => {
+            if (element.slug === order.slug) {
+              element.count++;
+              sessionStorage.currentCart = JSON.stringify(currentCart);
+              this.alreadyIn = true;
+            }
+          })
+          if (!this.alreadyIn) {
+            console.log('Here push1')
+            currentCart.push(order);
+            sessionStorage.currentCart = JSON.stringify(currentCart);
+            console.log("AfterChecking: ", currentCart)
+          }
+
+        } else {
+          console.log("Here push2")
+          currentCart.push(order);
+          sessionStorage.currentCart = JSON.stringify(currentCart);
+        }
+        this.$notify({
+          type: 'success',
+          title: 'Success',
+          text: 'Added to basket !'
+        });
+      }
+
     },
     getGameInfo() {
       fetch(

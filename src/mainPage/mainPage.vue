@@ -1,20 +1,39 @@
 <template>
   <div class="flex flex-col justify-start items-center w-full text-white bg-gray-general">
 
-    <!--      <span class="text-4xl border-b border-gray-300">Most popular games</span>-->
-
     <div class="flex h-16 w-full">
-      <div class="flex justify-center items-center w-1/3">
-        TAGS
+      <div class="flex flex-col justify-center items-center w-1/3">
+        <span class="text-2xl font-extrabold">Tags</span>
+        <div class="flex flex-wrap space-x-2 justify-center items-center mt-5">
+          <Dropdown
+              :options="tags"
+              v-on:selected="filterByTag"
+              :disabled="false"
+              name="tag"
+              placeholder="Please select an option">
+          </Dropdown>
+        </div>
       </div>
+
       <div class="flex justify-center items-center w-1/3">
-        <input  type="text" placeholder="Search game..."
-                                 class="bg-gray-general w-3/12 text-4xl outline-none text-center w-full"
-                                 spellcheck="false" v-model="query" @keypress="fetchGame">
+        <input type="text" placeholder="Search game..."
+               class="bg-gray-general w-3/12 text-4xl outline-none text-center w-full"
+               spellcheck="false" v-model="query" @keypress="fetchGame">
         <span v-if="gameSearched.detail" class="text-center text-red-500">{{ gameSearched.detail }}</span>
       </div>
-      <div class="flex justify-center items-center w-1/3">
-        GENRES
+
+      <div class="flex flex-col justify-center items-center w-1/3">
+
+        <span class="text-2xl font-extrabold">Genres</span>
+        <div class="flex flex-wrap space-x-2 justify-center items-center mt-5">
+            <Dropdown
+              :options="genres"
+              v-on:selected="filterByGenre"
+              :disabled="false"
+              name="genre"
+              placeholder="Please select an option">
+          </Dropdown>
+        </div>
       </div>
 
     </div>
@@ -31,11 +50,13 @@
 
 <script>
 import gameCard from "@/mainPage/gameCard";
+import Dropdown from 'vue-simple-search-dropdown';
 
 export default {
   name: "mainPage",
   components: {
-    gameCard
+    gameCard,
+    Dropdown
   },
   // firebase: {
   //   games: gamesRef
@@ -51,7 +72,9 @@ export default {
       url_base: 'https://api.rawg.io/api',
       query: '',
       gameSearched: {},
-      games: []
+      games: [],
+      tags: [],
+      genres: [],
     }
   },
   methods: {
@@ -62,14 +85,15 @@ export default {
     // },
     async fetchGame(e) {
       if (e.key === "Enter") {
-        if (this.query){
+        if (this.query) {
           this.searchGame();
-        }else {
+        } else {
           this.gameSearched = {};
           this.gameSearched.detail = 'Pleas enter a name.'
         }
       }
     },
+
     searchGame() {
       var nameOfGame = this.query.replace(/\s+/g, '-').toLowerCase();
 
@@ -78,18 +102,9 @@ export default {
       ).then(res => {
         return res.json();
       }).then(this.setResultsSearchGame);
-
-      //     .then(async function (response) {
-      //   var resp = await response.json()
-      //   console.log(resp);
-      //   if (resp.redirect){
-      //     this.wrongName = resp;
-      //   }
-      // });
     },
     setResultsSearchGame(results) {
       this.gameSearched = results;
-      console.log("game: ", this.gameSearched);
       if (this.gameSearched.redirect) {
         fetch(
             this.url_base + '/games/' + this.gameSearched.slug + '?key=' + this.api_key
@@ -98,20 +113,78 @@ export default {
         }).then(this.setResultsSearchGame);
       }
     },
-    getGames(){
+
+    getGames() {
       fetch(
           this.url_base + '/games' + '?key=' + this.api_key
       ).then(res => {
         return res.json();
       }).then(this.setResultsGetGames);
     },
-    setResultsGetGames(results){
+    setResultsGetGames(results) {
       this.games = results.results;
-      console.log("games: ", this.games);
-    }
+    },
+
+    getAllTags() {
+      fetch(
+          this.url_base + '/tags' + '?key=' + this.api_key
+      ).then(res => {
+        return res.json();
+      }).then(this.setResultsGetAllTags);
+    },
+    setResultsGetAllTags(results) {
+      results.results.forEach(element => {
+        this.tags.push({id: element.id, name: element.name, slug: element.slug})
+      })
+    },
+
+    getAllGenres() {
+      fetch(
+          this.url_base + '/genres' + '?key=' + this.api_key
+      ).then(res => {
+        return res.json();
+      }).then(this.setResultsGetAllGenres);
+    },
+    setResultsGetAllGenres(results) {
+      results.results.forEach(element => {
+        this.genres.push({id: element.id, name: element.name, slug: element.slug})
+      })
+    },
+
+    filterByTag(e) {
+      console.log(e)
+
+      if (e.name) {
+        fetch(
+            this.url_base + '/games' + '?key=' + this.api_key + '&tags=' + e.slug
+        ).then(res => {
+          return res.json();
+        }).then(this.setResultFilterByTags);
+      }
+    },
+    setResultFilterByTags(results) {
+      this.games = results.results;
+    },
+
+    filterByGenre(e) {
+      console.log(e)
+
+      if (e.name) {
+        fetch(
+            this.url_base + '/games' + '?key=' + this.api_key + '&genres=' + e.slug
+        ).then(res => {
+          return res.json();
+        }).then(this.setResultFilterByGenres);
+      }
+    },
+    setResultFilterByGenres(results) {
+      this.games = results.results;
+    },
   },
   mounted() {
     this.getGames()
+    this.getAllTags()
+    this.getAllGenres()
     // gamesRef.once('value').then(value => {
     //   this.popularGames = value.val();
     // });
