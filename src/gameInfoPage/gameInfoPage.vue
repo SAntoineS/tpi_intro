@@ -6,7 +6,9 @@
         <div class="flex flex-col w-96 flex-wrap">
           <a :href="game.website" target="_blank" class="hover:text-white text-sm text-gray-500">view site</a><span
             class="text-5xl font-extrabold">{{ game.name }} </span>
-          <span v-for="publisher in game.publishers" :key="publisher" class="text-gray-500"> {{ publisher.name }} </span>
+          <span v-for="publisher in game.publishers" :key="publisher" class="text-gray-500"> {{
+              publisher.name
+            }} </span>
           <span class="text-xs text-gray-500">{{ game.released }}</span>
         </div>
         <div class="my-10 flex space-x-4">
@@ -28,10 +30,12 @@
       </div>
       <div class="w-1/2 flex flex-col items-center z-20">
         <div class="flex flex-wrap justify-center">
-          <card-image v-for="(screen, index) in screenshots" :key="screen" :screen="screen" :screenshots="screenshots" :index="index"></card-image>
+          <card-image v-for="(screen, index) in screenshots" :key="screen" :screen="screen" :screenshots="screenshots"
+                      :index="index"></card-image>
         </div>
-        <span class="text-3xl font-extrabold">50 $</span>
-        <div class="select-none rounded-xl cursor-pointer flex justify-center items-center w-28 h-16 bg-gray-button hover:bg-white hover:text-black"
+        <span class="text-3xl font-extrabold">{{ price }} $</span>
+        <div
+            class="select-none rounded-xl cursor-pointer flex justify-center items-center w-28 h-16 bg-gray-button hover:bg-white hover:text-black"
             @click="addToCart">
           Add to cart
         </div>
@@ -55,23 +59,35 @@ export default {
       url_base: 'https://api.rawg.io/api',
       game: {},
       screenshots: [],
-      alreadyIn: false
+      alreadyIn: false,
+
+      price: 0
     }
   },
   mounted() {
     this.getGameInfo()
+    this.price = this.randomIntFromInterval(15, 50)
   },
   methods: {
+    randomIntFromInterval(min, max) { // min and max included
+      return Math.floor(Math.random() * (max - min + 1) + min)
+    },
     addToCart() {
-      if (!this.$auth.isAuthenticated){
+      if (!this.$auth.isAuthenticated) {
         this.$notify({
           type: 'warn',
           title: 'Warning',
           text: 'Sign in to add items in basket !'
         });
-      }else {
+      } else {
         let currentCart = []
-        let order = {slug: this.game.slug, price: 50, count: 1, img: this.game.background_image, name: this.game.name};
+        let order = {
+          slug: this.game.slug,
+          price: this.price,
+          count: 1,
+          img: this.game.background_image,
+          name: this.game.name
+        };
 
         if (sessionStorage.currentCart) {
           currentCart = JSON.parse(sessionStorage.currentCart);
@@ -113,6 +129,7 @@ export default {
     setResultsGameInfo(results) {
       this.game = results;
       console.log(this.game)
+      document.title = this.game.name
       this.getScreenshots()
     },
     getScreenshots() {
